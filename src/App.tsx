@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Dish, DishCategory, KitchenStation } from './types';
 import { INITIAL_DISHES, CATEGORIES, STATIONS } from './data/initialDishes';
+import { getImageUrl } from './utils/imageUrl';
 import Header from './components/Header';
 import DishCard from './components/DishCard';
 import DishDetailModal from './components/DishDetailModal';
@@ -300,7 +301,7 @@ export default function App() {
                 >
                   <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                     <img
-                      src={dish.photoUrl}
+                      src={getImageUrl(dish.photoUrl)}
                       alt={dish.name}
                       referrerPolicy="no-referrer"
                       className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-stone-200 shrink-0"

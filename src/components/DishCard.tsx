@@ -2,6 +2,7 @@ import type { Key } from 'react';
 import { Clock, Eye, Utensils, Flame, Edit2, Trash2, ShieldAlert } from 'lucide-react';
 import { Dish } from '../types';
 import { STATIONS } from '../data/initialDishes';
+import { getImageUrl } from '../utils/imageUrl';
 import AllergenBadge from './AllergenBadge';
 
 interface DishCardProps {
@@ -26,7 +27,7 @@ export default function DishCard({ dish, onOpenDetail, onEdit, onDelete }: DishC
         onClick={() => onOpenDetail(dish)}
       >
         <img
-          src={dish.photoUrl}
+          src={getImageUrl(dish.photoUrl)}
           alt={`Emplatado de ${dish.name}`}
           referrerPolicy="no-referrer"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-103"

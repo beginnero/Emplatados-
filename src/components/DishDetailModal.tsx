@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Dish } from '../types';
 import { STATIONS, CATEGORIES } from '../data/initialDishes';
+import { getImageUrl } from '../utils/imageUrl';
 import AllergenBadge from './AllergenBadge';
 
 interface DishDetailModalProps {
@@ -122,7 +123,7 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
             {/* Plating Photo Container */}
             <div className="md:col-span-6 relative aspect-4/3 md:aspect-auto min-h-[260px] md:min-h-[340px] bg-stone-900 group">
               <img
-                src={dish.photoUrl}
+                src={getImageUrl(dish.photoUrl)}
                 alt={`Foto de emplatado de ${dish.name}`}
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover cursor-zoom-in"
@@ -553,7 +554,7 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
         >
           <div className="relative max-w-5xl max-h-[90vh]">
             <img
-              src={dish.photoUrl}
+              src={getImageUrl(dish.photoUrl)}
               alt={dish.name}
               referrerPolicy="no-referrer"
               className="max-h-[85vh] max-w-full object-contain rounded-lg shadow-2xl border border-stone-800"

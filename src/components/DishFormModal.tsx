@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Dish, DishCategory, KitchenStation, Ingredient } from '../types';
 import { CATEGORIES, STATIONS, COMMON_ALLERGENS } from '../data/initialDishes';
+import { getImageUrl } from '../utils/imageUrl';
 
 interface DishFormModalProps {
   initialDish?: Dish | null;
@@ -269,7 +270,7 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
               <div className="sm:col-span-4 flex justify-center">
                 {photoUrl ? (
                   <img
-                    src={photoUrl}
+                    src={getImageUrl(photoUrl)}
                     alt="Vista previa"
                     referrerPolicy="no-referrer"
                     className="w-28 h-24 object-cover rounded-lg border border-stone-300 shadow-xs"
