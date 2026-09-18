@@ -1,0 +1,6 @@
+{
+  "name": "Fichas de Cocina - Emplatado y Recetas",
+  "description": "Manual visual para el equipo de cocina con fotos de emplatado, fichas técnicas y recetas paso a paso.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
