@@ -5,13 +5,12 @@ import {
   LayoutGrid, 
   List, 
   ChefHat, 
-  Flame, 
   Sparkles,
   Search,
   FilterX
 } from 'lucide-react';
-import { Dish, DishCategory, KitchenStation } from './types';
-import { INITIAL_DISHES, CATEGORIES, STATIONS } from './data/initialDishes';
+import { Dish, DishCategory } from './types';
+import { INITIAL_DISHES, CATEGORIES } from './data/initialDishes';
 import { getImageUrl } from './utils/imageUrl';
 import Header from './components/Header';
 import DishCard from './components/DishCard';
@@ -19,35 +18,19 @@ import DishDetailModal from './components/DishDetailModal';
 import DishFormModal from './components/DishFormModal';
 import KitchenTimer from './components/KitchenTimer';
 
-const STORAGE_KEY = 'restaurant_kitchen_menu_v23';
+const STORAGE_KEY = 'restaurant_kitchen_menu_v29';
 
 export default function App() {
   // 1. Dish Catalog State with LocalStorage Persistence
   const [dishes, setDishes] = useState<Dish[]>(() => {
     // Clear legacy keys if existing
     try {
-      localStorage.removeItem('restaurant_kitchen_menu_v1');
-      localStorage.removeItem('restaurant_kitchen_menu_v2');
-      localStorage.removeItem('restaurant_kitchen_menu_v3');
-      localStorage.removeItem('restaurant_kitchen_menu_v4');
-      localStorage.removeItem('restaurant_kitchen_menu_v5');
-      localStorage.removeItem('restaurant_kitchen_menu_v6');
-      localStorage.removeItem('restaurant_kitchen_menu_v7');
-      localStorage.removeItem('restaurant_kitchen_menu_v8');
-      localStorage.removeItem('restaurant_kitchen_menu_v9');
-      localStorage.removeItem('restaurant_kitchen_menu_v10');
-      localStorage.removeItem('restaurant_kitchen_menu_v11');
-      localStorage.removeItem('restaurant_kitchen_menu_v12');
-      localStorage.removeItem('restaurant_kitchen_menu_v13');
-      localStorage.removeItem('restaurant_kitchen_menu_v14');
-      localStorage.removeItem('restaurant_kitchen_menu_v15');
-      localStorage.removeItem('restaurant_kitchen_menu_v16');
-      localStorage.removeItem('restaurant_kitchen_menu_v17');
-      localStorage.removeItem('restaurant_kitchen_menu_v18');
-      localStorage.removeItem('restaurant_kitchen_menu_v19');
-      localStorage.removeItem('restaurant_kitchen_menu_v20');
-      localStorage.removeItem('restaurant_kitchen_menu_v21');
-      localStorage.removeItem('restaurant_kitchen_menu_v22');
+      localStorage.removeItem('restaurant_kitchen_menu_v23');
+      localStorage.removeItem('restaurant_kitchen_menu_v24');
+      localStorage.removeItem('restaurant_kitchen_menu_v25');
+      localStorage.removeItem('restaurant_kitchen_menu_v26');
+      localStorage.removeItem('restaurant_kitchen_menu_v27');
+      localStorage.removeItem('restaurant_kitchen_menu_v28');
     } catch {
       // Ignore
     }
@@ -57,7 +40,12 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          // Ensure sandos are classified under 'entrantes'
+          return parsed.map((d: Dish) => 
+            d.id.startsWith('dish-sando') || d.name.toLowerCase().includes('sando')
+              ? { ...d, category: 'entrantes' as const }
+              : d
+          );
         }
       }
     } catch {
@@ -76,7 +64,6 @@ export default function App() {
 
   // 2. Filters & View State
   const [selectedCategory, setSelectedCategory] = useState<DishCategory>('todos');
-  const [selectedStation, setSelectedStation] = useState<KitchenStation>('todas');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
 
@@ -90,11 +77,6 @@ export default function App() {
     return dishes.filter((dish) => {
       // Category filter
       if (selectedCategory !== 'todos' && dish.category !== selectedCategory) {
-        return false;
-      }
-
-      // Station filter
-      if (selectedStation !== 'todas' && dish.station !== selectedStation) {
         return false;
       }
 
@@ -113,7 +95,7 @@ export default function App() {
 
       return true;
     });
-  }, [dishes, selectedCategory, selectedStation, searchQuery]);
+  }, [dishes, selectedCategory, searchQuery]);
 
   // Handlers for Dish CRUD
   const handleOpenDetail = (dish: Dish) => {
@@ -186,12 +168,10 @@ export default function App() {
   const handleResetDefault = () => {
     setDishes(INITIAL_DISHES);
     setSelectedCategory('todos');
-    setSelectedStation('todas');
     setSearchQuery('');
   };
 
   const activeCategoryObj = CATEGORIES.find((c) => c.id === selectedCategory);
-  const activeStationObj = STATIONS.find((s) => s.id === selectedStation);
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col font-sans selection:bg-amber-200 selection:text-amber-950">
@@ -201,8 +181,6 @@ export default function App() {
         onSearchChange={setSearchQuery}
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
-        selectedStation={selectedStation}
-        onStationChange={setSelectedStation}
         onNewDish={handleStartNewDish}
         onExport={handleExportMenu}
         onImport={handleImportMenu}
@@ -218,21 +196,15 @@ export default function App() {
               Mostrando <strong className="text-stone-950">{filteredDishes.length}</strong> de {dishes.length} platos
             </span>
 
-            {(selectedCategory !== 'todos' || selectedStation !== 'todas' || searchQuery) && (
+            {(selectedCategory !== 'todos' || searchQuery) && (
               <div className="flex items-center gap-1.5 ml-2">
                 <span className="text-stone-300">|</span>
                 <span className="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-medium">
                   {activeCategoryObj?.label}
                 </span>
-                {selectedStation !== 'todas' && (
-                  <span className="text-xs bg-stone-200 text-stone-800 px-2 py-0.5 rounded font-medium">
-                    {activeStationObj?.label}
-                  </span>
-                )}
                 <button
                   onClick={() => {
                     setSelectedCategory('todos');
-                    setSelectedStation('todas');
                     setSearchQuery('');
                   }}
                   className="text-xs text-stone-500 hover:text-red-600 flex items-center gap-0.5 ml-1"
@@ -371,7 +343,6 @@ export default function App() {
               <button
                 onClick={() => {
                   setSelectedCategory('todos');
-                  setSelectedStation('todas');
                   setSearchQuery('');
                 }}
                 className="px-4 py-2 bg-stone-200 text-stone-800 rounded-lg text-xs font-bold hover:bg-stone-300 transition-colors"
@@ -394,17 +365,13 @@ export default function App() {
             <Sparkles className="w-4 h-4 text-amber-500" />
             <span>Normas Fundamentales del Pase de Cocina</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-stone-600">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-stone-600">
             <div className="p-3 bg-stone-50 rounded-xl border border-stone-200">
-              <span className="font-bold text-stone-900 block mb-1">1. Temperatura de la Vajilla</span>
-              Los platos de caliente salen de la mesa térmica a &gt;65°C. Los platos de cuarto frío deben reposar en frío para no atemperar tartares ni ensaladas.
-            </div>
-            <div className="p-3 bg-stone-50 rounded-xl border border-stone-200">
-              <span className="font-bold text-stone-900 block mb-1">2. Limpieza de Alas y Bordes</span>
+              <span className="font-bold text-stone-900 block mb-1">1. Limpieza de Alas y Bordes</span>
               Ningún plato sale al pase con gotas, huellas o salpicaduras fuera del montaje central. Paño limpio de pase siempre a mano.
             </div>
             <div className="p-3 bg-stone-50 rounded-xl border border-stone-200">
-              <span className="font-bold text-stone-900 block mb-1">3. Protocolo de Alérgenos</span>
+              <span className="font-bold text-stone-900 block mb-1">2. Protocolo de Alérgenos</span>
               Ante un ticket con alérgeno marcado, consultar la pestaña de alérgenos de la ficha antes de montar y avisar al jefe de partida.
             </div>
           </div>

@@ -1,11 +1,9 @@
 export type DishCategory = 
   | 'todos'
   | 'entrantes'
+  | 'sushi'
   | 'principales'
-  | 'carnes'
-  | 'pescados'
-  | 'postres'
-  | 'bases_salsas';
+  | 'postres';
 
 export type KitchenStation = 
   | 'todas'

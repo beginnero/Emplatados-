@@ -7,19 +7,16 @@ import {
   Upload, 
   RotateCcw,
   SlidersHorizontal,
-  Flame,
   Check
 } from 'lucide-react';
-import { DishCategory, KitchenStation } from '../types';
-import { CATEGORIES, STATIONS } from '../data/initialDishes';
+import { DishCategory } from '../types';
+import { CATEGORIES } from '../data/initialDishes';
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (val: string) => void;
   selectedCategory: DishCategory;
   onCategoryChange: (cat: DishCategory) => void;
-  selectedStation: KitchenStation;
-  onStationChange: (station: KitchenStation) => void;
   onNewDish: () => void;
   onExport: () => void;
   onImport: (file: File) => void;
@@ -32,8 +29,6 @@ export default function Header({
   onSearchChange,
   selectedCategory,
   onCategoryChange,
-  selectedStation,
-  onStationChange,
   onNewDish,
   onExport,
   onImport,
@@ -159,18 +154,36 @@ export default function Header({
           </div>
         )}
 
-        {/* Search & Kitchen Station Filters Row */}
-        <div className="py-3 border-t border-stone-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Search bar */}
-          <div className="relative flex-1 max-w-md">
+        {/* Shortcuts & Search Row - Optimized for Quick Kitchen Service */}
+        <div className="py-2.5 border-t border-stone-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Category Shortcuts: Toda la carta, Entrantes, Sushi, Principales, Postres */}
+          <nav aria-label="Atajos de categorías de carta" className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                id={`filter-category-${cat.id}`}
+                onClick={() => onCategoryChange(cat.id)}
+                className={`whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-amber-500 text-stone-950 shadow-md font-extrabold ring-2 ring-amber-400/80'
+                    : 'bg-stone-800/90 text-stone-300 hover:text-white hover:bg-stone-700 border border-stone-750'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Quick Search */}
+          <div className="relative flex-1 md:max-w-xs lg:max-w-sm">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               id="search-dish-input"
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Buscar por plato, ingrediente o alérgeno..."
-              className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-stone-800 border border-stone-700 rounded-lg text-white placeholder-stone-400 focus:outline-hidden focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+              placeholder="Buscar por plato, ingrediente..."
+              className="w-full pl-9 pr-7 py-2 text-xs sm:text-sm bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-400 focus:outline-hidden focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
             />
             {searchQuery && (
               <button
@@ -181,45 +194,6 @@ export default function Header({
               </button>
             )}
           </div>
-
-          {/* Station Quick Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mr-1 hidden lg:inline flex items-center gap-1">
-              <Flame className="w-3 h-3 text-amber-500" /> Partida:
-            </span>
-            {STATIONS.map((st) => (
-              <button
-                key={st.id}
-                id={`filter-station-${st.id}`}
-                onClick={() => onStationChange(st.id)}
-                className={`whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all ${
-                  selectedStation === st.id
-                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-xs'
-                    : 'bg-stone-800/90 text-stone-300 border-stone-700 hover:bg-stone-700'
-                }`}
-              >
-                {st.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Category tabs */}
-        <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto pb-2 border-t border-stone-800/40 pt-2 scrollbar-none">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              id={`filter-category-${cat.id}`}
-              onClick={() => onCategoryChange(cat.id)}
-              className={`whitespace-nowrap px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-                selectedCategory === cat.id
-                  ? 'bg-white text-stone-950 shadow-xs'
-                  : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
         </div>
       </div>
     </header>
