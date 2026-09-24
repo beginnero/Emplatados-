@@ -1,7 +1,11 @@
 export type DishCategory = 
   | 'todos'
   | 'entrantes'
-  | 'sushi'
+  | 'hosomaki'
+  | 'nigiri'
+  | 'uramaki'
+  | 'usuzukiri'
+  | 'surtidos'
   | 'principales'
   | 'postres';
 

@@ -37,6 +37,10 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
 
   const stationInfo = STATIONS.find((s) => s.id === dish.station);
   const categoryInfo = CATEGORIES.find((c) => c.id === dish.category);
+  const isNigiri = dish.name.toLowerCase().includes('nigiri');
+  const isUramaki = dish.name.toLowerCase().includes('uramaki') || dish.id.includes('uramaki');
+  const isSinGluten = dish.chefNotes?.toLowerCase().includes('sin gluten') || dish.platingDescription?.toLowerCase().includes('sin gluten');
+  const isVegano = dish.chefNotes?.toLowerCase().includes('vegana') || dish.chefNotes?.toLowerCase().includes('vegano');
 
   // Multiplier for recipe ingredients
   const ratio = portions / (dish.basePortions || 1);
@@ -128,6 +132,14 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover cursor-zoom-in"
                 onClick={() => setIsPhotoZoomed(true)}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src.includes('.webp')) {
+                    target.src = target.src.replace('.webp', '.jpg');
+                  } else {
+                    target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
+                  }
+                }}
               />
               <div 
                 className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-zoom-in pointer-events-none"
@@ -144,9 +156,42 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
             {/* Quick Specs for the Chef / Cook */}
             <div className="md:col-span-6 p-5 sm:p-6 flex flex-col justify-between space-y-4">
               <div>
-                <h1 className="text-xl sm:text-2xl font-black text-stone-900 leading-tight">
-                  {dish.name}
-                </h1>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h1 className="text-xl sm:text-2xl font-black text-stone-900 leading-tight">
+                    {dish.name}
+                  </h1>
+                  {isNigiri && (
+                    <span className="shrink-0 px-2.5 py-0.5 bg-red-600 text-white font-bold text-xs uppercase tracking-wide rounded-md shadow-xs">
+                      1 Pieza por Ración
+                    </span>
+                  )}
+                  {isUramaki && (
+                    <span className="shrink-0 px-2.5 py-0.5 bg-purple-700 text-white font-bold text-xs uppercase tracking-wide rounded-md shadow-xs">
+                      8 Piezas (Entera) / 4 Piezas (Media)
+                    </span>
+                  )}
+                </div>
+
+                {/* Dietary and Service Format Tags */}
+                {(isUramaki || isVegano || isSinGluten) && (
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 items-center">
+                    {isUramaki && (
+                      <span className="px-2.5 py-0.5 text-xs font-bold rounded-md bg-purple-100 text-purple-900 border border-purple-200">
+                        Roll: 8 piezas (entera) ó 4 piezas (media)
+                      </span>
+                    )}
+                    {isSinGluten && (
+                      <span className="px-2.5 py-0.5 text-xs font-bold rounded-md bg-teal-100 text-teal-900 border border-teal-200">
+                        🌾 100% Sin Gluten
+                      </span>
+                    )}
+                    {isVegano && (
+                      <span className="px-2.5 py-0.5 text-xs font-bold rounded-md bg-emerald-100 text-emerald-900 border border-emerald-200">
+                        🌱 Opción Vegana (sin mayosiracha)
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Primary Quick Indicators */}
                 <div className="mt-4 grid grid-cols-2 gap-2.5">
@@ -190,30 +235,11 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
                     </div>
                   </div>
                 </div>
-
-                {/* Plating Concept Highlight */}
-                <div className="mt-4 p-3 bg-amber-50/80 rounded-xl border border-amber-200/80">
-                  <div className="text-xs font-bold text-amber-950 flex items-center gap-1.5 mb-1">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-                    Concepto de Montaje:
-                  </div>
-                  <p className="text-xs text-amber-900 leading-relaxed">
-                    {dish.platingDescription}
-                  </p>
-                </div>
               </div>
-
-              {/* Finishing Touches Note */}
-              {dish.finishingTouches && (
-                <div className="p-2.5 bg-stone-100 rounded-lg text-xs text-stone-700 border border-stone-200">
-                  <strong className="text-stone-900">Toque final imprescindible: </strong>
-                  {dish.finishingTouches}
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Navigation Tabs (Emplatado / Receta / Alérgenos) */}
+          {/* Navigation Tabs (Montaje & Toque Final / Receta / Alérgenos) */}
           <div className="sticky top-0 z-10 bg-white border-b border-stone-200 px-5 sm:px-6 flex items-center justify-between">
             <nav className="flex space-x-2 sm:space-x-4">
               <button
@@ -225,8 +251,8 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
                     : 'border-transparent text-stone-500 hover:text-stone-800'
                 }`}
               >
-                <Utensils className="w-4 h-4" />
-                <span>1. Guía de Emplatado (Paso a Paso)</span>
+                <Sparkles className="w-4 h-4 text-amber-600" />
+                <span>1. Montaje & Toque Final</span>
               </button>
 
               <button
@@ -257,87 +283,74 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
             </nav>
           </div>
 
-          {/* Tab 1: Guía de Emplatado */}
+          {/* Tab 1: Montaje & Toque Final (Unificado y resumido) */}
           {activeTab === 'emplatado' && (
-            <div className="p-5 sm:p-7 space-y-6">
-              {/* Critical Chef Notes Callout */}
+            <div className="p-5 sm:p-7 space-y-5">
+              {/* Critical Chef Notes (si existe y concisa) */}
               {dish.chefNotes && (
-                <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl">
-                  <div className="flex items-center gap-2 text-sm font-bold text-red-900">
-                    <Info className="w-4 h-4 text-red-600 shrink-0" />
-                    <span>¡Punto Crítico del Chef para este pase!</span>
-                  </div>
-                  <p className="mt-1 text-sm text-red-800 leading-relaxed font-medium">
+                <div className="p-3.5 bg-amber-50/90 border-l-4 border-amber-500 rounded-r-xl text-xs text-amber-950 flex items-start gap-2.5">
+                  <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="leading-relaxed">
+                    <strong className="font-bold text-amber-900">Nota de Pase: </strong>
                     {dish.chefNotes}
-                  </p>
+                  </div>
                 </div>
               )}
 
-              {/* Step by step assembly */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
+              {/* Unified Montaje y Toque Final Box */}
+              <div className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-xs">
+                <div className="p-4 bg-stone-50/80 border-b border-stone-200 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
                     <Utensils className="w-4 h-4 text-amber-600" />
-                    Pasos de Montaje en el Pase
-                  </h3>
-                  <span className="text-xs text-stone-600 font-medium">
-                    Pulsa para marcar pasos completados
-                  </span>
-                </div>
-
-                <div className="space-y-2.5">
-                  {dish.platingSteps && dish.platingSteps.length > 0 ? (
-                    dish.platingSteps.map((step, idx) => {
-                      const isChecked = !!checkedPlatingSteps[idx];
-                      return (
-                        <div
-                          key={idx}
-                          onClick={() => togglePlatingStep(idx)}
-                          className={`p-3.5 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${
-                            isChecked
-                              ? 'bg-stone-50 border-stone-200 text-stone-400 line-through'
-                              : 'bg-white border-stone-200 text-stone-800 hover:border-amber-400'
-                          }`}
-                        >
-                          <button 
-                            type="button" 
-                            className="mt-0.5 shrink-0 text-stone-500 hover:text-amber-600"
-                          >
-                            {isChecked ? (
-                              <CheckSquare className="w-5 h-5 text-emerald-600" />
-                            ) : (
-                              <Square className="w-5 h-5 text-stone-400" />
-                            )}
-                          </button>
-                          <div className="flex-1">
-                            <span className="inline-block text-xs font-bold text-stone-700 uppercase tracking-wide mr-2">
-                              Paso {idx + 1}:
-                            </span>
-                            <span className="text-sm font-medium leading-relaxed">
-                              {step}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-stone-600 italic">
-                      No se han detallado pasos individuales. Consulta la descripción general del emplatado arriba.
+                    <h3 className="text-sm font-bold text-stone-900">
+                      Montaje y Toque Final
+                    </h3>
+                  </div>
+                  {dish.platingDescription && (
+                    <p className="text-xs text-stone-600 max-w-xl font-medium">
+                      {dish.platingDescription}
                     </p>
                   )}
                 </div>
-              </div>
 
-              {/* Finishing Details Box */}
-              <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
-                <h4 className="text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
-                  Checklist Final antes de salir a sala:
-                </h4>
-                <ul className="text-xs text-stone-700 space-y-1.5 list-disc list-inside">
-                  <li>Limpieza rigurosa del ala y los bordes del plato con paño limpio y alcohol o vinagre.</li>
-                  <li>Temperatura verificada: el plato debe coincidir con los requerimientos ({dish.servingTemp}).</li>
-                  <li>{dish.finishingTouches || 'Toque de flor / brote / sal según ficha.'}</li>
-                </ul>
+                <div className="p-4 sm:p-5 space-y-3">
+                  {dish.platingSteps && dish.platingSteps.length > 0 ? (
+                    <div className="space-y-2">
+                      {dish.platingSteps.map((step, idx) => {
+                        const isChecked = !!checkedPlatingSteps[idx];
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => togglePlatingStep(idx)}
+                            className={`p-3 rounded-lg border flex items-start gap-3 cursor-pointer transition-colors ${
+                              isChecked
+                                ? 'bg-stone-50 border-stone-200 text-stone-400 line-through'
+                                : 'bg-white border-stone-200 text-stone-800 hover:border-amber-400'
+                            }`}
+                          >
+                            <span className="shrink-0 w-5 h-5 rounded-full bg-stone-100 text-stone-700 text-xs font-bold flex items-center justify-center border border-stone-200 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <span className="text-xs sm:text-sm font-medium flex-1 leading-relaxed">
+                              {step}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+
+                  {/* Toque Final Destacado */}
+                  {dish.finishingTouches && (
+                    <div className="mt-3 p-3 bg-amber-50/70 border border-amber-200/80 rounded-lg flex items-start gap-2.5">
+                      <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="text-xs text-amber-950 leading-relaxed">
+                        <strong className="font-bold text-amber-900">Toque Final: </strong>
+                        {dish.finishingTouches}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -359,27 +372,44 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  {[1, 2, 4, 10, 20].map((num) => (
-                    <button
-                      key={num}
-                      onClick={() => setPortions(num)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
-                        portions === num
-                          ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
-                          : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-200'
-                      }`}
-                    >
-                      {num} {num === 1 ? 'ración' : 'raciones'}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {isUramaki ? (
+                    [0.5, 1, 2, 4, 10].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => setPortions(num)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                          portions === num
+                            ? 'bg-purple-700 text-white border-purple-800 shadow-xs'
+                            : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-200'
+                        }`}
+                      >
+                        {num === 0.5 ? '½ ración (4 pzs)' : num === 1 ? '1 ración (8 pzs)' : `${num} rollos (${num * 8} pzs)`}
+                      </button>
+                    ))
+                  ) : (
+                    [1, 2, 4, 10, 20].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => setPortions(num)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                          portions === num
+                            ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
+                            : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-200'
+                        }`}
+                      >
+                        {num} {num === 1 ? 'ración' : 'raciones'}
+                      </button>
+                    ))
+                  )}
                   <div className="ml-2 flex items-center gap-1">
                     <input
                       type="number"
-                      min={1}
+                      min={0.5}
+                      step={0.5}
                       max={500}
                       value={portions}
-                      onChange={(e) => setPortions(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) => setPortions(Math.max(0.5, parseFloat(e.target.value) || 1))}
                       className="w-16 px-2 py-1 text-xs font-bold border border-stone-300 rounded bg-white text-center"
                     />
                     <span className="text-xs text-stone-500 font-medium">rac.</span>
@@ -390,7 +420,17 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
               {/* Ingredients Table */}
               <div>
                 <h3 className="text-base font-bold text-stone-900 mb-3 flex items-center justify-between">
-                  <span>Ingredientes ({portions} {portions === 1 ? 'ración' : 'raciones'})</span>
+                  <span>
+                    Ingredientes ({
+                      isUramaki
+                        ? portions === 0.5
+                          ? 'Media Ración • 4 piezas'
+                          : portions === 1
+                          ? '1 Ración Completa • 8 piezas'
+                          : `${portions} raciones • ${portions * 8} piezas`
+                        : `${portions} ${portions === 1 ? 'ración' : 'raciones'}`
+                    })
+                  </span>
                   {ratio !== 1 && (
                     <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
                       Escalado x{ratio.toFixed(1)}
@@ -558,6 +598,12 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
               alt={dish.name}
               referrerPolicy="no-referrer"
               className="max-h-[85vh] max-w-full object-contain rounded-lg shadow-2xl border border-stone-800"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (target.src.includes('.webp')) {
+                  target.src = target.src.replace('.webp', '.jpg');
+                }
+              }}
             />
             <div className="mt-3 text-center text-white text-sm font-medium">
               {dish.name} • <span className="text-amber-400">{dish.tableware}</span> (Toca en cualquier sitio para cerrar)

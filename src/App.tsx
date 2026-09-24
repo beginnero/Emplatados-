@@ -18,19 +18,18 @@ import DishDetailModal from './components/DishDetailModal';
 import DishFormModal from './components/DishFormModal';
 import KitchenTimer from './components/KitchenTimer';
 
-const STORAGE_KEY = 'restaurant_kitchen_menu_v29';
+const STORAGE_KEY = 'restaurant_kitchen_menu_v51';
 
 export default function App() {
   // 1. Dish Catalog State with LocalStorage Persistence
   const [dishes, setDishes] = useState<Dish[]>(() => {
     // Clear legacy keys if existing
     try {
-      localStorage.removeItem('restaurant_kitchen_menu_v23');
-      localStorage.removeItem('restaurant_kitchen_menu_v24');
-      localStorage.removeItem('restaurant_kitchen_menu_v25');
-      localStorage.removeItem('restaurant_kitchen_menu_v26');
-      localStorage.removeItem('restaurant_kitchen_menu_v27');
-      localStorage.removeItem('restaurant_kitchen_menu_v28');
+      localStorage.removeItem('restaurant_kitchen_menu_v46');
+      localStorage.removeItem('restaurant_kitchen_menu_v47');
+      localStorage.removeItem('restaurant_kitchen_menu_v48');
+      localStorage.removeItem('restaurant_kitchen_menu_v49');
+      localStorage.removeItem('restaurant_kitchen_menu_v50');
     } catch {
       // Ignore
     }
@@ -40,12 +39,28 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Ensure sandos are classified under 'entrantes'
-          return parsed.map((d: Dish) => 
-            d.id.startsWith('dish-sando') || d.name.toLowerCase().includes('sando')
-              ? { ...d, category: 'entrantes' as const }
-              : d
-          );
+          const initialMap = new Map(INITIAL_DISHES.map((d) => [d.id, d]));
+          // Merge any newly introduced initial dishes not yet in localStorage
+          const existingIds = new Set(parsed.map((d: Dish) => d.id));
+          const missingInitial = INITIAL_DISHES.filter((d) => !existingIds.has(d.id));
+          return [...parsed, ...missingInitial].map((d: any) => {
+            const initial = initialMap.get(d.id);
+            let cat = d.category;
+            if (d.id.startsWith('dish-sando') || d.name.toLowerCase().includes('sando')) {
+              cat = 'entrantes';
+            } else if (cat === 'sushi' || !cat) {
+              if (d.id.includes('hosomaki') || d.name.toLowerCase().includes('hosomaki')) cat = 'hosomaki';
+              else if (d.id.includes('uramaki') || d.name.toLowerCase().includes('uramaki')) cat = 'uramaki';
+              else if (d.id.includes('usuzuk') || d.name.toLowerCase().includes('usuzuk')) cat = 'usuzukiri';
+              else if (d.id.includes('surtido') || d.name.toLowerCase().includes('surtido')) cat = 'surtidos';
+              else cat = 'nigiri';
+            }
+            return {
+              ...d,
+              ...(initial ? { photoUrl: initial.photoUrl } : {}),
+              category: cat,
+            };
+          });
         }
       }
     } catch {
