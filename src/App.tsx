@@ -18,18 +18,18 @@ import DishDetailModal from './components/DishDetailModal';
 import DishFormModal from './components/DishFormModal';
 import KitchenTimer from './components/KitchenTimer';
 
-const STORAGE_KEY = 'restaurant_kitchen_menu_v51';
+const STORAGE_KEY = 'restaurant_kitchen_menu_v60';
 
 export default function App() {
   // 1. Dish Catalog State with LocalStorage Persistence
   const [dishes, setDishes] = useState<Dish[]>(() => {
     // Clear legacy keys if existing
     try {
-      localStorage.removeItem('restaurant_kitchen_menu_v46');
-      localStorage.removeItem('restaurant_kitchen_menu_v47');
-      localStorage.removeItem('restaurant_kitchen_menu_v48');
-      localStorage.removeItem('restaurant_kitchen_menu_v49');
-      localStorage.removeItem('restaurant_kitchen_menu_v50');
+      localStorage.removeItem('restaurant_kitchen_menu_v55');
+      localStorage.removeItem('restaurant_kitchen_menu_v56');
+      localStorage.removeItem('restaurant_kitchen_menu_v57');
+      localStorage.removeItem('restaurant_kitchen_menu_v58');
+      localStorage.removeItem('restaurant_kitchen_menu_v59');
     } catch {
       // Ignore
     }
@@ -48,6 +48,8 @@ export default function App() {
             let cat = d.category;
             if (d.id.startsWith('dish-sando') || d.name.toLowerCase().includes('sando')) {
               cat = 'entrantes';
+            } else if (d.id.includes('okonomiyaki') || d.name.toLowerCase().includes('okonomiyaki')) {
+              cat = 'okonomiyaki';
             } else if (cat === 'sushi' || !cat) {
               if (d.id.includes('hosomaki') || d.name.toLowerCase().includes('hosomaki')) cat = 'hosomaki';
               else if (d.id.includes('uramaki') || d.name.toLowerCase().includes('uramaki')) cat = 'uramaki';

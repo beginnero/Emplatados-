@@ -6,6 +6,7 @@ export type DishCategory =
   | 'uramaki'
   | 'usuzukiri'
   | 'surtidos'
+  | 'okonomiyaki'
   | 'principales'
   | 'postres';
 

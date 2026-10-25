@@ -3,6 +3,7 @@ import { Clock, Eye, Utensils, Flame, Edit2, Trash2, ShieldAlert } from 'lucide-
 import { Dish } from '../types';
 import { STATIONS } from '../data/initialDishes';
 import { getImageUrl } from '../utils/imageUrl';
+import { getPieceBadge } from '../utils/pieceBadge';
 import AllergenBadge from './AllergenBadge';
 
 interface DishCardProps {
@@ -15,9 +16,12 @@ interface DishCardProps {
 
 export default function DishCard({ dish, onOpenDetail, onEdit, onDelete }: DishCardProps) {
   const stationInfo = STATIONS.find((s) => s.id === dish.station);
-  const isNigiri = dish.name.toLowerCase().includes('nigiri');
-  const isUramaki = dish.name.toLowerCase().includes('uramaki') || dish.id.includes('uramaki');
-  const isSinGluten = dish.chefNotes?.toLowerCase().includes('sin gluten') || dish.platingDescription?.toLowerCase().includes('sin gluten');
+  const pieceBadge = getPieceBadge(dish);
+  const isSinGluten = 
+    dish.chefNotes?.toLowerCase().includes('sin gluten') || 
+    dish.platingDescription?.toLowerCase().includes('sin gluten') ||
+    dish.finishingTouches?.toLowerCase().includes('sin gluten') ||
+    dish.ingredients?.some(i => i.notes?.toLowerCase().includes('sin gluten'));
   const isVegano = dish.chefNotes?.toLowerCase().includes('vegana') || dish.chefNotes?.toLowerCase().includes('vegano');
 
   return (
@@ -48,19 +52,14 @@ export default function DishCard({ dish, onOpenDetail, onEdit, onDelete }: DishC
         {/* Overlay gradient for badges legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
-        {/* Station tag & Nigiri / Uramaki tags */}
+        {/* Station tag & Piece Count tag */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 items-center">
           <span className={`px-2.5 py-1 text-xs font-semibold rounded-md border shadow-xs bg-white/95 text-stone-800 border-stone-200 backdrop-blur-xs`}>
             {stationInfo?.label || dish.station}
           </span>
-          {isNigiri && (
-            <span className="px-2.5 py-1 text-xs font-black rounded-md border shadow-md bg-red-600 text-white border-red-700 tracking-wider uppercase">
-              1 PIEZA
-            </span>
-          )}
-          {isUramaki && (
-            <span className="px-2.5 py-1 text-xs font-black rounded-md border shadow-md bg-purple-700 text-white border-purple-800 tracking-wider uppercase">
-              8 o 4 PIEZAS
+          {pieceBadge && (
+            <span className={`px-2.5 py-1 text-xs font-black rounded-md border shadow-md tracking-wider uppercase ${pieceBadge.bgClass} ${pieceBadge.borderClass}`}>
+              {pieceBadge.text}
             </span>
           )}
         </div>
@@ -100,9 +99,9 @@ export default function DishCard({ dish, onOpenDetail, onEdit, onDelete }: DishC
               <Flame className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span className="font-medium text-stone-700">{dish.servingTemp}</span>
             </div>
-            {isUramaki && (
-              <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                8 o 4 piezas
+            {pieceBadge && (
+              <span className="text-[11px] font-bold text-stone-700 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
+                {pieceBadge.text}
               </span>
             )}
             {isVegano && (
@@ -111,8 +110,12 @@ export default function DishCard({ dish, onOpenDetail, onEdit, onDelete }: DishC
               </span>
             )}
             {isSinGluten && (
-              <span className="text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                🌾 Sin Gluten
+              <span 
+                title="Opción Sin Gluten bajo comanda expresa. Cocina debe aplicar protocolo para evitar contaminación cruzada."
+                className="text-[11px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1 shadow-xs"
+              >
+                <ShieldAlert className="w-3 h-3 text-amber-600 shrink-0" />
+                🌾 Opción Sin Gluten
               </span>
             )}
           </div>

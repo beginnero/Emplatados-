@@ -18,6 +18,7 @@ import {
 import { Dish } from '../types';
 import { STATIONS, CATEGORIES } from '../data/initialDishes';
 import { getImageUrl } from '../utils/imageUrl';
+import { getPieceBadge } from '../utils/pieceBadge';
 import AllergenBadge from './AllergenBadge';
 
 interface DishDetailModalProps {
@@ -37,9 +38,13 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
 
   const stationInfo = STATIONS.find((s) => s.id === dish.station);
   const categoryInfo = CATEGORIES.find((c) => c.id === dish.category);
-  const isNigiri = dish.name.toLowerCase().includes('nigiri');
+  const pieceBadge = getPieceBadge(dish);
   const isUramaki = dish.name.toLowerCase().includes('uramaki') || dish.id.includes('uramaki');
-  const isSinGluten = dish.chefNotes?.toLowerCase().includes('sin gluten') || dish.platingDescription?.toLowerCase().includes('sin gluten');
+  const isSinGluten = 
+    dish.chefNotes?.toLowerCase().includes('sin gluten') || 
+    dish.platingDescription?.toLowerCase().includes('sin gluten') ||
+    dish.finishingTouches?.toLowerCase().includes('sin gluten') ||
+    dish.ingredients?.some(i => i.notes?.toLowerCase().includes('sin gluten'));
   const isVegano = dish.chefNotes?.toLowerCase().includes('vegana') || dish.chefNotes?.toLowerCase().includes('vegano');
 
   // Multiplier for recipe ingredients
@@ -160,29 +165,25 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
                   <h1 className="text-xl sm:text-2xl font-black text-stone-900 leading-tight">
                     {dish.name}
                   </h1>
-                  {isNigiri && (
-                    <span className="shrink-0 px-2.5 py-0.5 bg-red-600 text-white font-bold text-xs uppercase tracking-wide rounded-md shadow-xs">
-                      1 Pieza por Ración
-                    </span>
-                  )}
-                  {isUramaki && (
-                    <span className="shrink-0 px-2.5 py-0.5 bg-purple-700 text-white font-bold text-xs uppercase tracking-wide rounded-md shadow-xs">
-                      8 Piezas (Entera) / 4 Piezas (Media)
+                  {pieceBadge && (
+                    <span className={`shrink-0 px-2.5 py-0.5 font-bold text-xs uppercase tracking-wide rounded-md shadow-xs ${pieceBadge.bgClass} border ${pieceBadge.borderClass}`}>
+                      {pieceBadge.text}
                     </span>
                   )}
                 </div>
 
                 {/* Dietary and Service Format Tags */}
-                {(isUramaki || isVegano || isSinGluten) && (
+                {(pieceBadge || isVegano || isSinGluten) && (
                   <div className="mt-2.5 flex flex-wrap gap-1.5 items-center">
-                    {isUramaki && (
-                      <span className="px-2.5 py-0.5 text-xs font-bold rounded-md bg-purple-100 text-purple-900 border border-purple-200">
-                        Roll: 8 piezas (entera) ó 4 piezas (media)
+                    {pieceBadge && (
+                      <span className="px-2.5 py-0.5 text-xs font-bold rounded-md bg-stone-100 text-stone-900 border border-stone-300">
+                        🥢 {pieceBadge.detailText}
                       </span>
                     )}
                     {isSinGluten && (
-                      <span className="px-2.5 py-0.5 text-xs font-bold rounded-md bg-teal-100 text-teal-900 border border-teal-200">
-                        🌾 100% Sin Gluten
+                      <span className="px-2.5 py-0.5 text-xs font-bold rounded-md bg-amber-100 text-amber-950 border border-amber-300 flex items-center gap-1">
+                        <ShieldAlert className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        🌾 Opción Sin Gluten (Bajo petición)
                       </span>
                     )}
                     {isVegano && (
@@ -190,6 +191,21 @@ export default function DishDetailModal({ dish, onClose, onEdit }: DishDetailMod
                         🌱 Opción Vegana (sin mayosiracha)
                       </span>
                     )}
+                  </div>
+                )}
+
+                {/* Protocolo Sin Gluten y Contaminación Cruzada */}
+                {isSinGluten && (
+                  <div className="mt-3 p-3 bg-amber-50/90 border border-amber-300 rounded-xl text-xs text-amber-950 flex items-start gap-2.5 shadow-xs">
+                    <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-amber-900 uppercase tracking-wide block">
+                        Alerta Cocina: Opción Sin Gluten (Prevenir Contaminación Cruzada)
+                      </span>
+                      <p className="mt-0.5 text-amber-900/90 leading-relaxed">
+                        <strong>No dar por sentado que este plato es sin gluten por defecto.</strong> Requiere pedir expresamente la opción para celíacos. La partida debe emplear salsa de soja tamari sin gluten, verificar ingredientes libres de gluten y <strong>extremar la limpieza de tablas, cuchillos y esterillas para evitar contaminación cruzada</strong> con panko, trigo o harinas.
+                      </p>
+                    </div>
                   </div>
                 )}
 
