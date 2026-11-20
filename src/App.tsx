@@ -1,35 +1,78 @@
 import { useState, useEffect, useMemo } from 'react';
-import { 
-  Plus, 
-  UtensilsCrossed, 
-  LayoutGrid, 
-  List, 
-  ChefHat, 
-  Sparkles,
-  Search,
-  FilterX
-} from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { Dish, DishCategory } from './types';
 import { INITIAL_DISHES, CATEGORIES } from './data/initialDishes';
-import { getImageUrl } from './utils/imageUrl';
 import Header from './components/Header';
 import DishCard from './components/DishCard';
 import DishDetailModal from './components/DishDetailModal';
 import DishFormModal from './components/DishFormModal';
 import KitchenTimer from './components/KitchenTimer';
 
-const STORAGE_KEY = 'restaurant_kitchen_menu_v60';
+const STORAGE_KEY = 'restaurant_kitchen_menu_v75';
+const THEME_KEY = 'kitchen_manual_theme';
 
 export default function App() {
-  // 1. Dish Catalog State with LocalStorage Persistence
-  const [dishes, setDishes] = useState<Dish[]>(() => {
-    // Clear legacy keys if existing
+  // 1. Light / Dark Theme (Pedidosapp palette)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === 'light' || saved === 'dark') return saved;
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+    } catch {
+      // Ignore storage access errors
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // Ignore
+    }
+  }, [theme]);
+
+  // 2. Dish Catalog State with LocalStorage Persistence
+  const [dishes, setDishes] = useState<Dish[]>(() => {
+    let customFromPrev: Dish[] = [];
+    const initialIds = new Set(INITIAL_DISHES.map((d) => d.id));
+
+    try {
+      const prevV74 = localStorage.getItem('restaurant_kitchen_menu_v74');
+      if (prevV74 && !localStorage.getItem(STORAGE_KEY)) {
+        const parsedPrev = JSON.parse(prevV74);
+        if (Array.isArray(parsedPrev)) {
+          customFromPrev = parsedPrev.filter((d: Dish) => !initialIds.has(d.id));
+        }
+      }
       localStorage.removeItem('restaurant_kitchen_menu_v55');
       localStorage.removeItem('restaurant_kitchen_menu_v56');
       localStorage.removeItem('restaurant_kitchen_menu_v57');
       localStorage.removeItem('restaurant_kitchen_menu_v58');
       localStorage.removeItem('restaurant_kitchen_menu_v59');
+      localStorage.removeItem('restaurant_kitchen_menu_v60');
+      localStorage.removeItem('restaurant_kitchen_menu_v61');
+      localStorage.removeItem('restaurant_kitchen_menu_v62');
+      localStorage.removeItem('restaurant_kitchen_menu_v63');
+      localStorage.removeItem('restaurant_kitchen_menu_v64');
+      localStorage.removeItem('restaurant_kitchen_menu_v65');
+      localStorage.removeItem('restaurant_kitchen_menu_v66');
+      localStorage.removeItem('restaurant_kitchen_menu_v67');
+      localStorage.removeItem('restaurant_kitchen_menu_v68');
+      localStorage.removeItem('restaurant_kitchen_menu_v69');
+      localStorage.removeItem('restaurant_kitchen_menu_v70');
+      localStorage.removeItem('restaurant_kitchen_menu_v71');
+      localStorage.removeItem('restaurant_kitchen_menu_v72');
+      localStorage.removeItem('restaurant_kitchen_menu_v73');
+      localStorage.removeItem('restaurant_kitchen_menu_v74');
     } catch {
       // Ignore
     }
@@ -40,22 +83,31 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const initialMap = new Map(INITIAL_DISHES.map((d) => [d.id, d]));
-          // Merge any newly introduced initial dishes not yet in localStorage
           const existingIds = new Set(parsed.map((d: Dish) => d.id));
           const missingInitial = INITIAL_DISHES.filter((d) => !existingIds.has(d.id));
-          return [...parsed, ...missingInitial].map((d: any) => {
+          return [...parsed, ...missingInitial].map((d: Dish) => {
             const initial = initialMap.get(d.id);
             let cat = d.category;
             if (d.id.startsWith('dish-sando') || d.name.toLowerCase().includes('sando')) {
               cat = 'entrantes';
             } else if (d.id.includes('okonomiyaki') || d.name.toLowerCase().includes('okonomiyaki')) {
               cat = 'okonomiyaki';
-            } else if (cat === 'sushi' || !cat) {
-              if (d.id.includes('hosomaki') || d.name.toLowerCase().includes('hosomaki')) cat = 'hosomaki';
-              else if (d.id.includes('uramaki') || d.name.toLowerCase().includes('uramaki')) cat = 'uramaki';
-              else if (d.id.includes('usuzuk') || d.name.toLowerCase().includes('usuzuk')) cat = 'usuzukiri';
-              else if (d.id.includes('surtido') || d.name.toLowerCase().includes('surtido')) cat = 'surtidos';
-              else cat = 'nigiri';
+            } else if (d.id.includes('kare') || d.name.toLowerCase().includes('kare') || d.name.toLowerCase().includes('curry')) {
+              cat = 'curry';
+            } else if ((cat as string) === 'principales' || d.id.includes('donburi') || d.name.toLowerCase().includes('-don')) {
+              cat = 'donburi';
+            } else if (!cat || (cat as string) === 'sushi') {
+              if (d.id.includes('hosomaki') || d.name.toLowerCase().includes('hosomaki')) {
+                cat = 'hosomaki';
+              } else if (d.id.includes('uramaki') || d.name.toLowerCase().includes('uramaki')) {
+                cat = 'uramaki';
+              } else if (d.id.includes('usuzuk') || d.name.toLowerCase().includes('usuzuk')) {
+                cat = 'usuzukiri';
+              } else if (d.id.includes('surtido') || d.name.toLowerCase().includes('surtido')) {
+                cat = 'surtidos';
+              } else {
+                cat = 'nigiri';
+              }
             }
             return {
               ...d,
@@ -68,7 +120,7 @@ export default function App() {
     } catch {
       console.warn('Could not load dishes from localStorage');
     }
-    return INITIAL_DISHES;
+    return [...customFromPrev, ...INITIAL_DISHES];
   });
 
   useEffect(() => {
@@ -79,46 +131,53 @@ export default function App() {
     }
   }, [dishes]);
 
-  // 2. Filters & View State
+  // 3. Filters, Modals & Toast
   const [selectedCategory, setSelectedCategory] = useState<DishCategory>('todos');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
-
-  // 3. Modals State
   const [viewingDish, setViewingDish] = useState<Dish | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Filtered dishes
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+  };
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 2600);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { todos: dishes.length };
+    for (const d of dishes) {
+      counts[d.category] = (counts[d.category] || 0) + 1;
+    }
+    return counts;
+  }, [dishes]);
+
   const filteredDishes = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return dishes.filter((dish) => {
-      // Category filter
       if (selectedCategory !== 'todos' && dish.category !== selectedCategory) {
         return false;
       }
-
-      // Text search
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
+      if (q) {
         const matchName = dish.name.toLowerCase().includes(q);
         const matchTableware = dish.tableware.toLowerCase().includes(q);
         const matchPlating = dish.platingDescription.toLowerCase().includes(q);
         const matchAllergens = dish.allergens.some((a) => a.toLowerCase().includes(q));
-        const matchIngredients = dish.ingredients?.some((ing) => ing.name.toLowerCase().includes(q));
-        const matchStation = dish.station.toLowerCase().includes(q);
-
-        return matchName || matchTableware || matchPlating || matchAllergens || matchIngredients || matchStation;
+        const matchIngredients = dish.ingredients?.some((ing) =>
+          ing.name.toLowerCase().includes(q)
+        );
+        return matchName || matchTableware || matchPlating || matchAllergens || matchIngredients;
       }
-
       return true;
     });
   }, [dishes, selectedCategory, searchQuery]);
 
-  // Handlers for Dish CRUD
-  const handleOpenDetail = (dish: Dish) => {
-    setViewingDish(dish);
-  };
-
+  // Handlers
   const handleStartNewDish = () => {
     setEditingDish(null);
     setIsFormOpen(true);
@@ -135,6 +194,7 @@ export default function App() {
     if (viewingDish?.id === dishId) {
       setViewingDish(null);
     }
+    showToast('Ficha eliminada');
   };
 
   const handleSaveDish = (savedDish: Dish) => {
@@ -144,24 +204,28 @@ export default function App() {
         const updated = [...prev];
         updated[existsIndex] = savedDish;
         return updated;
-      } else {
-        return [savedDish, ...prev];
       }
+      return [savedDish, ...prev];
     });
     setIsFormOpen(false);
     setEditingDish(null);
-    setViewingDish(savedDish); // Open the saved dish right away for confirmation
+    setViewingDish(savedDish);
+    showToast('Ficha guardada');
   };
 
-  // Export / Import Helpers
   const handleExportMenu = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(dishes, null, 2));
+    const dataStr =
+      'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(dishes, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `menu_cocina_recetas_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute(
+      'download',
+      `menu_cocina_recetas_${new Date().toISOString().slice(0, 10)}.json`
+    );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+    showToast('Copia exportada');
   };
 
   const handleImportMenu = (file: File) => {
@@ -172,11 +236,12 @@ export default function App() {
         const parsed = JSON.parse(content);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setDishes(parsed);
+          showToast('Carta importada correctamente');
         } else {
-          alert('El archivo no contiene un formato de menú válido.');
+          showToast('El archivo no tiene un formato válido');
         }
-      } catch (err) {
-        alert('Error al leer el archivo JSON.');
+      } catch {
+        showToast('No se pudo leer el archivo');
       }
     };
     reader.readAsText(file);
@@ -186,226 +251,189 @@ export default function App() {
     setDishes(INITIAL_DISHES);
     setSelectedCategory('todos');
     setSearchQuery('');
+    showToast('Carta oficial restaurada');
   };
 
-  const activeCategoryObj = CATEGORIES.find((c) => c.id === selectedCategory);
-
   return (
-    <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col font-sans selection:bg-amber-200 selection:text-amber-950">
-      {/* Primary Kitchen Header */}
+    <div className="min-h-screen flex flex-col bg-[#f5f4f0] dark:bg-[#141413] text-[#1a1a18] dark:text-[#f0efe8]">
       <Header
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
+        theme={theme}
+        onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
         onNewDish={handleStartNewDish}
         onExport={handleExportMenu}
         onImport={handleImportMenu}
         onResetDefault={handleResetDefault}
-        totalDishes={dishes.length}
+        onLogoClick={() => {
+          setSelectedCategory('todos');
+          setSearchQuery('');
+        }}
       />
 
-      {/* Secondary Bar: Active Filters, Count & Layout Toggle */}
-      <div className="bg-white border-b border-stone-200 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-stone-700">
-            <span>
-              Mostrando <strong className="text-stone-950">{filteredDishes.length}</strong> de {dishes.length} platos
-            </span>
-
-            {(selectedCategory !== 'todos' || searchQuery) && (
-              <div className="flex items-center gap-1.5 ml-2">
-                <span className="text-stone-300">|</span>
-                <span className="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-medium">
-                  {activeCategoryObj?.label}
-                </span>
-                <button
-                  onClick={() => {
-                    setSelectedCategory('todos');
-                    setSearchQuery('');
-                  }}
-                  className="text-xs text-stone-500 hover:text-red-600 flex items-center gap-0.5 ml-1"
-                >
-                  <FilterX className="w-3 h-3" /> Limpiar filtros
-                </button>
-              </div>
+      <main className="flex-1 mx-auto w-full max-w-6xl px-4 sm:px-6 py-4 sm:py-6 pb-20">
+        {/* Clean Search Row */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1 max-w-xl">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a7a74] dark:text-[#8a8a82]" />
+            <input
+              id="search-dish-input"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar plato, ingrediente o alérgeno..."
+              aria-label="Buscar plato, ingrediente o alérgeno"
+              className="w-full min-h-[44px] rounded-xl border border-black/12 dark:border-white/12 bg-white dark:bg-[#1e1e1c] pl-10 pr-10 text-sm text-[#1a1a18] dark:text-[#f0efe8] placeholder:text-[#9c9b94] dark:placeholder:text-[#6a6a63] focus:border-[#2a8549] dark:focus:border-[#4cc376] focus:outline-none"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Limpiar búsqueda"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-lg text-[#7a7a74] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
             )}
           </div>
 
-          <div className="flex items-center gap-1 bg-stone-100 p-0.5 rounded-lg border border-stone-200">
-            <button
-              id="view-mode-grid"
-              onClick={() => setViewMode('grid')}
-              title="Vista de cuadrícula con fotos de emplatado"
-              className={`p-1.5 rounded-md text-xs font-medium flex items-center gap-1 transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-white text-stone-950 shadow-xs'
-                  : 'text-stone-500 hover:text-stone-800'
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Tarjetas</span>
-            </button>
-            <button
-              id="view-mode-compact"
-              onClick={() => setViewMode('compact')}
-              title="Vista compacta de pase"
-              className={`p-1.5 rounded-md text-xs font-medium flex items-center gap-1 transition-colors ${
-                viewMode === 'compact'
-                  ? 'bg-white text-stone-950 shadow-xs'
-                  : 'text-stone-500 hover:text-stone-800'
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Compacta</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
-        {filteredDishes.length > 0 ? (
-          viewMode === 'grid' ? (
-            /* Cards Grid with Big Plating Photos */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredDishes.map((dish) => (
-                <DishCard
-                  key={dish.id}
-                  dish={dish}
-                  onOpenDetail={handleOpenDetail}
-                  onEdit={handleEditDish}
-                  onDelete={handleDeleteDish}
-                />
-              ))}
-            </div>
-          ) : (
-            /* Compact List View for Fast Service / Expediter */
-            <div className="bg-white rounded-xl border border-stone-200 divide-y divide-stone-200 shadow-xs overflow-hidden">
-              {filteredDishes.map((dish) => (
-                <div
-                  key={dish.id}
-                  onClick={() => handleOpenDetail(dish)}
-                  className="p-3 sm:p-4 flex items-center justify-between gap-4 hover:bg-stone-50 transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                    <img
-                      src={getImageUrl(dish.photoUrl)}
-                      alt={dish.name}
-                      referrerPolicy="no-referrer"
-                      className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-stone-200 shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                          {dish.station}
-                        </span>
-                        <span className="text-xs text-stone-500">• {dish.prepTimeMinutes} min</span>
-                      </div>
-                      <h3 className="font-bold text-stone-900 text-sm sm:text-base truncate group-hover:text-amber-800">
-                        {dish.name}
-                      </h3>
-                      <p className="text-xs text-stone-600 truncate mt-0.5">
-                        <strong className="text-stone-700">Vajilla:</strong> {dish.tableware} | {dish.servingTemp}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 flex items-center gap-2">
-                    <span className="px-3 py-1.5 text-xs font-bold rounded-lg bg-stone-900 text-white group-hover:bg-stone-800 transition-colors">
-                      Ver Emplatado
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        ) : dishes.length === 0 ? (
-          /* Empty Catalog - Ready for User's Dishes */
-          <div className="p-10 sm:p-14 text-center bg-white rounded-3xl border border-stone-200/80 shadow-xs max-w-xl mx-auto my-10">
-            <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-600 mb-4 border border-amber-200">
-              <ChefHat className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-black text-stone-900 mb-2 tracking-tight">
-              Carta limpia y lista para tus platos
-            </h3>
-            <p className="text-sm text-stone-600 leading-relaxed mb-6 max-w-md mx-auto">
-              Se han eliminado todos los platos de ejemplo. Puedes ir diciéndome cada plato de tu carta aquí por el chat con sus detalles (nombre, partida, emplatado, ingredientes, etc.), o pulsar el botón para añadirlo directamente.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="flex items-center gap-3 text-xs text-[#6c6c66] dark:text-[#9a9991] tabular-nums">
+            <span>
+              {filteredDishes.length} {filteredDishes.length === 1 ? 'plato' : 'platos'}
+            </span>
+            {(selectedCategory !== 'todos' || searchQuery) && (
               <button
-                onClick={handleStartNewDish}
-                className="w-full sm:w-auto px-5 py-2.5 bg-amber-500 text-stone-950 rounded-xl text-sm font-bold hover:bg-amber-400 transition-colors shadow-xs flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Añadir Primer Plato
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Empty Search / Empty Filter State */
-          <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-stone-300 max-w-lg mx-auto my-8">
-            <div className="w-14 h-14 bg-stone-100 rounded-full flex items-center justify-center mx-auto text-stone-400 mb-3">
-              <Search className="w-7 h-7" />
-            </div>
-            <h3 className="text-lg font-bold text-stone-800 mb-1">
-              No se han encontrado platos
-            </h3>
-            <p className="text-xs text-stone-500 mb-5">
-              {searchQuery
-                ? `No hay coincidencias para "${searchQuery}". Intenta con otro término o limpia los filtros.`
-                : 'No hay platos registrados en esta partida o categoría todavía.'}
-            </p>
-            <div className="flex items-center justify-center gap-2">
-              <button
+                type="button"
                 onClick={() => {
                   setSelectedCategory('todos');
                   setSearchQuery('');
                 }}
-                className="px-4 py-2 bg-stone-200 text-stone-800 rounded-lg text-xs font-bold hover:bg-stone-300 transition-colors"
+                className="text-xs font-medium text-[#2a8549] dark:text-[#4cc376] hover:underline cursor-pointer"
               >
-                Ver toda la carta
+                Ver todos
               </button>
-              <button
-                onClick={handleStartNewDish}
-                className="px-4 py-2 bg-amber-500 text-stone-950 rounded-lg text-xs font-bold hover:bg-amber-400 transition-colors"
-              >
-                + Añadir Nuevo Plato
-              </button>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Quick Kitchen Tips & Guidelines Banner */}
-        <section className="mt-12 bg-white rounded-2xl p-6 border border-stone-200 shadow-xs">
-          <div className="flex items-center gap-2 text-stone-900 font-bold text-sm mb-3">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>Normas Fundamentales del Pase de Cocina</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-stone-600">
-            <div className="p-3 bg-stone-50 rounded-xl border border-stone-200">
-              <span className="font-bold text-stone-900 block mb-1">1. Limpieza de Alas y Bordes</span>
-              Ningún plato sale al pase con gotas, huellas o salpicaduras fuera del montaje central. Paño limpio de pase siempre a mano.
+        {/* Mobile & Tablet Horizontal Category Strip */}
+        <nav
+          aria-label="Categorías de carta"
+          className="mt-3 flex lg:hidden items-center gap-1.5 overflow-x-auto no-scrollbar pb-1"
+        >
+          {CATEGORIES.map((cat) => {
+            const isActive = selectedCategory === cat.id;
+            const count = categoryCounts[cat.id] || 0;
+            return (
+              <button
+                key={cat.id}
+                id={`filter-category-mobile-${cat.id}`}
+                type="button"
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`min-h-[38px] rounded-xl px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer tabular-nums ${
+                  isActive
+                    ? 'bg-[#1a1a18] dark:bg-[#f0efe8] text-white dark:text-[#1a1a18]'
+                    : 'bg-white dark:bg-[#1e1e1c] border border-black/10 dark:border-white/10 text-[#5c5c56] dark:text-[#a8a8a0]'
+                }`}
+              >
+                {cat.label} ({count})
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Desktop Left Sidebar + Minimalist Photo Card Grid */}
+        <div className="mt-4 lg:mt-6 lg:grid lg:grid-cols-[220px_1fr] lg:items-start lg:gap-6">
+          {/* Desktop Sticky Category Directory */}
+          <aside className="hidden lg:block sticky top-18 rounded-2xl border border-black/8 dark:border-white/8 bg-white dark:bg-[#1e1e1c] p-2">
+            <div className="px-3 py-2 text-xs font-semibold text-[#7a7a74] dark:text-[#8a8a82]">
+              Categorías
             </div>
-            <div className="p-3 bg-stone-50 rounded-xl border border-stone-200">
-              <span className="font-bold text-stone-900 block mb-1">2. Protocolo de Alérgenos</span>
-              Ante un ticket con alérgeno marcado, consultar la pestaña de alérgenos de la ficha antes de montar y avisar al jefe de partida.
-            </div>
-          </div>
-        </section>
+            <nav aria-label="Categorías" className="space-y-0.5">
+              {CATEGORIES.map((cat) => {
+                const isActive = selectedCategory === cat.id;
+                const count = categoryCounts[cat.id] || 0;
+                return (
+                  <button
+                    key={cat.id}
+                    id={`filter-category-${cat.id}`}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-colors cursor-pointer ${
+                      isActive
+                        ? 'bg-[#f5f4f0] dark:bg-[#2a2a27] font-semibold text-[#1a1a18] dark:text-[#f0efe8]'
+                        : 'font-medium text-[#5c5c56] dark:text-[#a8a8a0] hover:bg-black/3 dark:hover:bg-white/4'
+                    }`}
+                  >
+                    <span className="truncate">{cat.label}</span>
+                    <span
+                      className={`text-xs tabular-nums shrink-0 ${
+                        isActive
+                          ? 'text-[#2a8549] dark:text-[#4cc376] font-semibold'
+                          : 'text-[#8a8a82]'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+
+          {/* Cards Grid */}
+          <section>
+            {filteredDishes.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                {filteredDishes.map((dish) => (
+                  <DishCard
+                    key={dish.id}
+                    dish={dish}
+                    onOpenDetail={setViewingDish}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-black/8 dark:border-white/8 bg-white dark:bg-[#1e1e1c] p-10 text-center max-w-md mx-auto my-8">
+                <p className="text-sm font-semibold text-[#1a1a18] dark:text-[#f0efe8]">
+                  No hay platos que coincidan
+                </p>
+                <p className="mt-1 text-xs text-[#6c6c66] dark:text-[#9a9991]">
+                  Prueba otra búsqueda o cambia de categoría.
+                </p>
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory('todos');
+                      setSearchQuery('');
+                    }}
+                    className="min-h-[40px] rounded-xl border border-black/10 dark:border-white/10 px-4 text-xs font-medium text-[#1a1a18] dark:text-[#f0efe8] cursor-pointer"
+                  >
+                    Ver toda la carta
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStartNewDish}
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-[#1a1a18] dark:bg-[#f0efe8] px-4 text-xs font-medium text-white dark:text-[#1a1a18] cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Añadir plato</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
       </main>
 
-      {/* Floating Kitchen Pass Timer */}
       <KitchenTimer />
 
-      {/* Dish Detail Modal (Plating, Recipe, Scaling, Allergens, Print) */}
       <DishDetailModal
         dish={viewingDish}
         onClose={() => setViewingDish(null)}
         onEdit={handleEditDish}
+        onDelete={handleDeleteDish}
       />
 
-      {/* Dish Form Modal (Add / Edit) */}
       {isFormOpen && (
         <DishFormModal
           initialDish={editingDish}
@@ -417,18 +445,14 @@ export default function App() {
         />
       )}
 
-      {/* Footer */}
-      <footer className="mt-auto bg-stone-900 text-stone-400 border-t border-stone-800 py-6 text-xs text-center">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-stone-300 font-medium">
-            <ChefHat className="w-4 h-4 text-amber-400" />
-            <span>Manual Técnico de Cocina • Emplatados y Recetas</span>
-          </div>
-          <div className="text-stone-500">
-            Optimizado para visualización en pantallas y tablets de cocina
-          </div>
+      {toastMessage && (
+        <div
+          role="status"
+          className="fixed bottom-18 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-xl bg-[#1a1a18] dark:bg-[#f0efe8] px-4 py-2.5 text-xs font-medium text-white dark:text-[#1a1a18] shadow-lg whitespace-nowrap"
+        >
+          {toastMessage}
         </div>
-      </footer>
+      )}
     </div>
   );
 }

@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { 
-  X, 
-  Upload, 
-  Plus, 
-  Trash2, 
-  Save, 
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Upload,
+  Plus,
+  Trash2,
+  Save,
   Image as ImageIcon,
-  Sparkles,
-  Utensils
 } from 'lucide-react';
 import { Dish, DishCategory, KitchenStation, Ingredient } from '../types';
 import { CATEGORIES, STATIONS, COMMON_ALLERGENS } from '../data/initialDishes';
 import { getImageUrl } from '../utils/imageUrl';
+import { sortAllergens } from './AllergenBadge';
 
 interface DishFormModalProps {
   initialDish?: Dish | null;
@@ -21,55 +20,65 @@ interface DishFormModalProps {
 
 export default function DishFormModal({ initialDish, onSave, onClose }: DishFormModalProps) {
   const [name, setName] = useState(initialDish?.name || '');
-  const [category, setCategory] = useState<Exclude<DishCategory, 'todos'>>(initialDish?.category || 'principales');
-  const [station, setStation] = useState<Exclude<KitchenStation, 'todas'>>(initialDish?.station || 'calientes');
+  const [category, setCategory] = useState<Exclude<DishCategory, 'todos'>>(
+    initialDish?.category || 'donburi'
+  );
+  const [station, setStation] = useState<Exclude<KitchenStation, 'todas'>>(
+    initialDish?.station || 'calientes'
+  );
   const [photoUrl, setPhotoUrl] = useState(initialDish?.photoUrl || '');
-  const [tableware, setTableware] = useState(initialDish?.tableware || 'Plato llano blanco (26 cm)');
-  const [servingTemp, setServingTemp] = useState(initialDish?.servingTemp || 'Caliente (>70°C)');
-  const [prepTimeMinutes, setPrepTimeMinutes] = useState(initialDish?.prepTimeMinutes || 10);
-  const [platingDescription, setPlatingDescription] = useState(initialDish?.platingDescription || '');
-  const [finishingTouches, setFinishingTouches] = useState(initialDish?.finishingTouches || '');
+  const [tableware, setTableware] = useState(initialDish?.tableware || 'Plato llano (26 cm)');
+  const [servingTemp, setServingTemp] = useState(initialDish?.servingTemp || 'Caliente');
+  const [prepTimeMinutes, setPrepTimeMinutes] = useState(initialDish?.prepTimeMinutes || 5);
+  const [platingDescription, setPlatingDescription] = useState(
+    initialDish?.platingDescription || ''
+  );
+  const [finishingTouches, setFinishingTouches] = useState(
+    initialDish?.finishingTouches || ''
+  );
   const [chefNotes, setChefNotes] = useState(initialDish?.chefNotes || '');
-  const [basePortions, setBasePortions] = useState(initialDish?.basePortions || 1);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  // Plating steps
   const [platingSteps, setPlatingSteps] = useState<string[]>(
     initialDish?.platingSteps && initialDish.platingSteps.length > 0
       ? initialDish.platingSteps
-      : ['Colocar la base en el centro del plato.', 'Disponer el elemento principal.', 'Salsear y terminar con decoración.']
+      : ['Colocar la base en el plato.', 'Disponer el elemento principal.']
   );
 
-  // Allergens
-  const [selectedAllergens, setSelectedAllergens] = useState<string[]>(initialDish?.allergens || []);
+  const [selectedAllergens, setSelectedAllergens] = useState<string[]>(
+    sortAllergens(initialDish?.allergens || [])
+  );
 
-  // Ingredients
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     initialDish?.ingredients && initialDish.ingredients.length > 0
       ? initialDish.ingredients
-      : [
-          { name: 'Ingrediente principal', quantity: 150, unit: 'g', notes: 'cortado limpio' },
-          { name: 'Salsa o guarnición', quantity: 50, unit: 'g', notes: 'templada' },
-        ]
+      : [{ name: '', quantity: 100, unit: 'g', notes: '' }]
   );
 
-  // Recipe steps
   const [recipeSteps, setRecipeSteps] = useState<string[]>(
     initialDish?.recipeSteps && initialDish.recipeSteps.length > 0
       ? initialDish.recipeSteps
-      : ['Preparar la mise en place y pesar ingredientes.', 'Cocinar y mantener a temperatura.']
+      : ['Preparar la mise en place.']
   );
 
-  // Handle local file upload
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size limit ~5MB
     if (file.size > 5 * 1024 * 1024) {
-      alert('La imagen es demasiado grande. Por favor elige una imagen menor a 5MB.');
+      setFormError('La imagen supera el límite de 5 MB.');
       return;
     }
 
+    setFormError(null);
     const reader = new FileReader();
     reader.onload = (event) => {
       if (typeof event.target?.result === 'string') {
@@ -85,10 +94,7 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
     );
   };
 
-  // Plating step helpers
-  const handleAddPlatingStep = () => {
-    setPlatingSteps([...platingSteps, '']);
-  };
+  const handleAddPlatingStep = () => setPlatingSteps([...platingSteps, '']);
   const handleUpdatePlatingStep = (index: number, val: string) => {
     const next = [...platingSteps];
     next[index] = val;
@@ -98,10 +104,7 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
     setPlatingSteps(platingSteps.filter((_, i) => i !== index));
   };
 
-  // Recipe step helpers
-  const handleAddRecipeStep = () => {
-    setRecipeSteps([...recipeSteps, '']);
-  };
+  const handleAddRecipeStep = () => setRecipeSteps([...recipeSteps, '']);
   const handleUpdateRecipeStep = (index: number, val: string) => {
     const next = [...recipeSteps];
     next[index] = val;
@@ -111,11 +114,14 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
     setRecipeSteps(recipeSteps.filter((_, i) => i !== index));
   };
 
-  // Ingredient helpers
   const handleAddIngredient = () => {
     setIngredients([...ingredients, { name: '', quantity: 100, unit: 'g', notes: '' }]);
   };
-  const handleUpdateIngredient = (index: number, field: keyof Ingredient, val: string | number) => {
+  const handleUpdateIngredient = (
+    index: number,
+    field: keyof Ingredient,
+    val: string | number
+  ) => {
     const next = [...ingredients];
     next[index] = { ...next[index], [field]: val };
     setIngredients(next);
@@ -127,7 +133,7 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert('Por favor indica el nombre del plato.');
+      setFormError('Indica el nombre del plato antes de guardar.');
       return;
     }
 
@@ -136,15 +142,15 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
       name: name.trim(),
       category,
       station,
-      photoUrl: photoUrl.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80',
+      photoUrl: photoUrl.trim(),
       tableware: tableware.trim() || 'Plato estándar',
       servingTemp: servingTemp.trim() || 'Caliente',
       prepTimeMinutes: Number(prepTimeMinutes) || 5,
       platingDescription: platingDescription.trim(),
       platingSteps: platingSteps.filter((s) => s.trim().length > 0),
       finishingTouches: finishingTouches.trim(),
-      allergens: selectedAllergens,
-      basePortions: Number(basePortions) || 1,
+      allergens: sortAllergens(selectedAllergens),
+      basePortions: initialDish?.basePortions || 1,
       ingredients: ingredients.filter((i) => i.name.trim().length > 0),
       recipeSteps: recipeSteps.filter((r) => r.trim().length > 0),
       chefNotes: chefNotes.trim(),
@@ -154,42 +160,55 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
     onSave(newDish);
   };
 
+  const inputClass =
+    'min-h-[44px] w-full rounded-xl border border-black/12 dark:border-white/12 bg-[#f5f4f0] dark:bg-[#141413] px-3.5 py-2 text-sm text-[#1a1a18] dark:text-[#f0efe8] placeholder:text-[#9c9b94] dark:placeholder:text-[#6a6a63] focus:border-[#2a8549] dark:focus:border-[#4cc376] focus:outline-none';
+
   return (
-    <div 
+    <div
       id="dish-form-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-950/75 backdrop-blur-xs overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-xs p-0 sm:p-4 animate-fadeIn"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div 
+      <div
         id="dish-form-modal"
-        className="relative w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-stone-200"
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full sm:max-w-3xl max-h-[92vh] rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#242422] border-t sm:border border-black/10 dark:border-white/10 shadow-2xl flex flex-col overflow-hidden"
       >
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 bg-stone-900 text-white">
-          <div className="flex items-center gap-2">
-            <Utensils className="w-5 h-5 text-amber-400" />
-            <h2 className="text-lg font-bold text-white">
-              {initialDish ? 'Editar Ficha de Plato' : 'Añadir Nuevo Plato al Menú'}
-            </h2>
-          </div>
+        <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-black/15 dark:bg-white/20 sm:hidden shrink-0" />
+
+        <header className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-black/8 dark:border-white/8">
+          <h2 className="text-lg font-bold text-[#1a1a18] dark:text-[#f0efe8]">
+            {initialDish ? 'Editar ficha' : 'Nuevo plato'}
+          </h2>
           <button
             id="btn-close-form"
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition-colors"
+            aria-label="Cerrar formulario"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[#6c6c66] dark:text-[#9a9991] hover:bg-black/5 dark:hover:bg-white/6 cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </header>
 
-        {/* Scrollable Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Section 1: Basic Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                Nombre del Plato *
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-6">
+          {formError && (
+            <div className="rounded-xl border border-red-500/30 bg-red-50 dark:bg-red-950/30 px-3.5 py-2.5 text-xs font-medium text-[#b91c1c] dark:text-red-400">
+              {formError}
+            </div>
+          )}
+
+          {/* Datos básicos */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="input-dish-name"
+                className="block text-xs font-medium text-[#6c6c66] dark:text-[#9a9991] mb-1.5"
+              >
+                Nombre del plato
               </label>
               <input
                 id="input-dish-name"
@@ -197,127 +216,136 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ej. Tartar de Atún Rojo Balfegó"
-                className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                placeholder="Ej. Okonomiyaki de Salmón"
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                Categoría en Carta
+              <label
+                htmlFor="select-dish-category"
+                className="block text-xs font-medium text-[#6c6c66] dark:text-[#9a9991] mb-1.5"
+              >
+                Categoría
               </label>
               <select
                 id="select-dish-category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as Exclude<DishCategory, 'todos'>)}
-                className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                className={inputClass}
               >
                 {CATEGORIES.filter((c) => c.id !== 'todos').map((c) => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                Partida Asignada en Cocina
+              <label
+                htmlFor="select-dish-station"
+                className="block text-xs font-medium text-[#6c6c66] dark:text-[#9a9991] mb-1.5"
+              >
+                Partida
               </label>
               <select
                 id="select-dish-station"
                 value={station}
                 onChange={(e) => setStation(e.target.value as Exclude<KitchenStation, 'todas'>)}
-                className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                className={inputClass}
               >
                 {STATIONS.filter((s) => s.id !== 'todas').map((s) => (
-                  <option key={s.id} value={s.id}>{s.label}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Section 2: Photo Setup */}
-          <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
-            <span className="block text-xs font-bold text-stone-700 uppercase">
-              Foto de Referencia del Emplatado
+          {/* Foto */}
+          <div className="pt-5 border-t border-black/8 dark:border-white/8 space-y-3">
+            <span className="block text-sm font-semibold text-[#1a1a18] dark:text-[#f0efe8]">
+              Foto de emplatado
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
-              <div className="sm:col-span-8 space-y-2">
-                <div>
-                  <label className="block text-xs text-stone-600 mb-1">URL de la imagen:</label>
+              <div className="sm:col-span-8 space-y-2.5">
+                <input
+                  id="input-dish-photo-url"
+                  type="text"
+                  value={photoUrl}
+                  onChange={(e) => setPhotoUrl(e.target.value)}
+                  placeholder="Ruta o URL de la imagen..."
+                  className={inputClass}
+                />
+                <label className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-black/10 dark:border-white/10 bg-[#f5f4f0] dark:bg-[#141413] px-3.5 py-2 text-xs font-medium text-[#1a1a18] dark:text-[#f0efe8] cursor-pointer hover:border-black/25 dark:hover:border-white/25 transition-colors">
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>Subir desde dispositivo</span>
                   <input
-                    id="input-dish-photo-url"
-                    type="url"
-                    value={photoUrl}
-                    onChange={(e) => setPhotoUrl(e.target.value)}
-                    placeholder="https://... o sube una foto desde tu dispositivo"
-                    className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg bg-white"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
                   />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg text-xs font-medium cursor-pointer transition-colors">
-                    <Upload className="w-3.5 h-3.5" /> Subir foto desde móvil / PC
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  <span className="text-[11px] text-stone-500">Admite fotos tomadas con la cámara</span>
-                </div>
+                </label>
               </div>
-
               <div className="sm:col-span-4 flex justify-center">
                 {photoUrl ? (
                   <img
                     src={getImageUrl(photoUrl)}
                     alt="Vista previa"
                     referrerPolicy="no-referrer"
-                    className="w-28 h-24 object-cover rounded-lg border border-stone-300 shadow-xs"
+                    className="w-32 h-22 object-cover rounded-xl border border-black/10 dark:border-white/10"
                   />
                 ) : (
-                  <div className="w-28 h-24 rounded-lg border border-dashed border-stone-300 flex flex-col items-center justify-center text-stone-400 bg-white">
-                    <ImageIcon className="w-6 h-6 mb-1" />
-                    <span className="text-[10px]">Sin foto</span>
+                  <div className="w-32 h-22 rounded-xl border border-dashed border-black/15 dark:border-white/15 flex flex-col items-center justify-center text-[#7a7a74] dark:text-[#8a8a82] bg-[#f5f4f0] dark:bg-[#141413]">
+                    <ImageIcon className="h-5 w-5 mb-1 opacity-60" />
+                    <span className="text-[11px]">Sin foto</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Section 3: Tableware, Temp & Timing */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Servicio */}
+          <div className="pt-5 border-t border-black/8 dark:border-white/8 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                Tipo de Vajilla / Plato
+              <label
+                htmlFor="input-dish-tableware"
+                className="block text-xs font-medium text-[#6c6c66] dark:text-[#9a9991] mb-1.5"
+              >
+                Vajilla
               </label>
               <input
                 id="input-dish-tableware"
                 type="text"
                 value={tableware}
                 onChange={(e) => setTableware(e.target.value)}
-                placeholder="Ej. Plato cerámico negro 26cm"
-                className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg"
+                className={inputClass}
               />
             </div>
-
             <div>
-              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                Temperatura de Servicio
+              <label
+                htmlFor="input-dish-temp"
+                className="block text-xs font-medium text-[#6c6c66] dark:text-[#9a9991] mb-1.5"
+              >
+                Temperatura
               </label>
               <input
                 id="input-dish-temp"
                 type="text"
                 value={servingTemp}
                 onChange={(e) => setServingTemp(e.target.value)}
-                placeholder="Ej. Muy caliente (>75°C) o Frío (4°C)"
-                className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg"
+                className={inputClass}
               />
             </div>
-
             <div>
-              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                Tiempo de Pase (minutos)
+              <label
+                htmlFor="input-dish-time"
+                className="block text-xs font-medium text-[#6c6c66] dark:text-[#9a9991] mb-1.5"
+              >
+                Tiempo (min)
               </label>
               <input
                 id="input-dish-time"
@@ -326,207 +354,199 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
                 max={120}
                 value={prepTimeMinutes}
                 onChange={(e) => setPrepTimeMinutes(Number(e.target.value))}
-                className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg"
+                className={`${inputClass} font-mono-code tabular-nums`}
               />
             </div>
           </div>
 
-          {/* Section 4: Emplatado */}
-          <div className="space-y-3 p-4 bg-stone-50 rounded-xl border border-stone-200">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800 uppercase">
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              Guía de Emplatado (Instrucciones para el Pase)
-            </div>
+          {/* Montaje */}
+          <div className="pt-5 border-t border-black/8 dark:border-white/8 space-y-4">
+            <span className="block text-sm font-semibold text-[#1a1a18] dark:text-[#f0efe8]">
+              Montaje y toque final
+            </span>
 
-            <div>
-              <label className="block text-xs text-stone-600 mb-1">
-                Descripción general del concepto de montaje:
-              </label>
-              <textarea
-                id="input-plating-desc"
-                rows={2}
-                value={platingDescription}
-                onChange={(e) => setPlatingDescription(e.target.value)}
-                placeholder="Ej. Montaje central en aro con quenelle a la derecha y salsa perimetral..."
-                className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white"
-              />
-            </div>
+            <textarea
+              id="input-plating-desc"
+              rows={2}
+              value={platingDescription}
+              onChange={(e) => setPlatingDescription(e.target.value)}
+              placeholder="Resumen del montaje..."
+              className="w-full rounded-xl border border-black/12 dark:border-white/12 bg-[#f5f4f0] dark:bg-[#141413] px-3.5 py-2.5 text-sm text-[#1a1a18] dark:text-[#f0efe8] placeholder:text-[#9c9b94] focus:border-[#2a8549] dark:focus:border-[#4cc376] focus:outline-none"
+            />
 
-            {/* Plating steps */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-stone-700">Pasos de montaje (en orden):</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-[#6c6c66] dark:text-[#9a9991]">
+                  Pasos de montaje
+                </span>
                 <button
                   type="button"
                   onClick={handleAddPlatingStep}
-                  className="inline-flex items-center gap-1 text-xs text-amber-700 hover:text-amber-800 font-bold"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#2a8549] dark:text-[#4cc376] cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Añadir Paso
+                  <Plus className="h-3.5 w-3.5" /> Añadir paso
                 </button>
               </div>
-
-              <div className="space-y-2">
-                {platingSteps.map((step, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-stone-400 w-6">#{idx + 1}</span>
-                    <input
-                      type="text"
-                      value={step}
-                      onChange={(e) => handleUpdatePlatingStep(idx, e.target.value)}
-                      placeholder={`Paso ${idx + 1} de emplatado...`}
-                      className="flex-1 px-3 py-1.5 text-xs border border-stone-300 rounded-lg bg-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePlatingStep(idx)}
-                      className="text-stone-400 hover:text-red-600 p-1"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {platingSteps.map((step, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="font-mono-code text-xs text-[#6c6c66] dark:text-[#9a9991] w-5 tabular-nums">
+                    {idx + 1}.
+                  </span>
+                  <input
+                    type="text"
+                    value={step}
+                    onChange={(e) => handleUpdatePlatingStep(idx, e.target.value)}
+                    placeholder={`Paso ${idx + 1}...`}
+                    className={inputClass}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePlatingStep(idx)}
+                    aria-label="Eliminar paso"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#7a7a74] hover:text-[#b91c1c] cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
             </div>
 
             <div>
-              <label className="block text-xs text-stone-600 mb-1">
-                Toques finales imprescindibles (Sal, brotes, aceite, etc.):
+              <label className="block text-xs font-medium text-[#6c6c66] dark:text-[#9a9991] mb-1.5">
+                Toque final
               </label>
               <input
                 type="text"
                 value={finishingTouches}
                 onChange={(e) => setFinishingTouches(e.target.value)}
-                placeholder="Ej. Escamas de sal Maldon, 3 brotes de albahaca y chorrito de AOVE arbequina"
-                className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg bg-white"
+                placeholder="Salsas, cebolleta, sésamo, sal en escamas..."
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-red-700 mb-1">
-                ¡Punto Crítico del Chef! (Notas de atención durante el servicio):
+              <label className="block text-xs font-medium text-[#6c6c66] dark:text-[#9a9991] mb-1.5">
+                Nota de pase (incluye si tiene opción sin gluten o vegana)
               </label>
               <input
                 type="text"
                 value={chefNotes}
                 onChange={(e) => setChefNotes(e.target.value)}
-                placeholder="Ej. Cuidado: el plato debe estar caliente; no cortar la carne antes de reposar."
-                className="w-full px-3 py-2 text-xs border border-red-300 rounded-lg bg-red-50/50"
+                placeholder="Ej. Opción sin gluten disponible bajo petición con tamari..."
+                className={inputClass}
               />
             </div>
           </div>
 
-          {/* Section 5: Ingredients & Recipe */}
-          <div className="space-y-3 p-4 bg-stone-50 rounded-xl border border-stone-200">
+          {/* Ingredientes */}
+          <div className="pt-5 border-t border-black/8 dark:border-white/8 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-800 uppercase">
-                Ingredientes de la Ficha Técnica
+              <span className="text-sm font-semibold text-[#1a1a18] dark:text-[#f0efe8]">
+                Ingredientes
               </span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-stone-600">Raciones base:</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={basePortions}
-                  onChange={(e) => setBasePortions(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-14 px-2 py-1 text-xs border border-stone-300 rounded bg-white text-center font-bold"
-                />
-              </div>
+              <button
+                type="button"
+                onClick={handleAddIngredient}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#2a8549] dark:text-[#4cc376] cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" /> Añadir ingrediente
+              </button>
             </div>
 
             <div className="space-y-2">
               {ingredients.map((item, idx) => (
-                <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-white p-2 rounded-lg border border-stone-200">
+                <div
+                  key={idx}
+                  className="grid grid-cols-12 gap-2 items-center"
+                >
                   <input
                     type="text"
                     value={item.name}
                     onChange={(e) => handleUpdateIngredient(idx, 'name', e.target.value)}
-                    placeholder="Nombre del ingrediente"
-                    className="flex-2 min-w-[140px] px-2.5 py-1 text-xs border border-stone-300 rounded"
+                    placeholder="Ingrediente"
+                    className={`${inputClass} col-span-12 sm:col-span-5`}
                   />
                   <input
                     type="number"
                     step="any"
                     value={item.quantity}
-                    onChange={(e) => handleUpdateIngredient(idx, 'quantity', parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleUpdateIngredient(idx, 'quantity', parseFloat(e.target.value) || 0)
+                    }
                     placeholder="Cant."
-                    className="w-20 px-2 py-1 text-xs border border-stone-300 rounded text-right"
+                    className={`${inputClass} col-span-4 sm:col-span-2 text-right font-mono-code tabular-nums`}
                   />
                   <input
                     type="text"
                     value={item.unit}
                     onChange={(e) => handleUpdateIngredient(idx, 'unit', e.target.value)}
-                    placeholder="Unid. (g, ml, ud)"
-                    className="w-20 px-2 py-1 text-xs border border-stone-300 rounded"
+                    placeholder="Ud."
+                    className={`${inputClass} col-span-4 sm:col-span-2`}
                   />
                   <input
                     type="text"
                     value={item.notes || ''}
                     onChange={(e) => handleUpdateIngredient(idx, 'notes', e.target.value)}
-                    placeholder="Corte / notas"
-                    className="flex-1 min-w-[100px] px-2 py-1 text-xs border border-stone-300 rounded"
+                    placeholder="Notas"
+                    className={`${inputClass} col-span-3 sm:col-span-2`}
                   />
                   <button
                     type="button"
                     onClick={() => handleRemoveIngredient(idx)}
-                    className="text-stone-400 hover:text-red-600 p-1"
+                    aria-label="Eliminar ingrediente"
+                    className="col-span-1 flex h-10 w-full items-center justify-center rounded-xl text-[#7a7a74] hover:text-[#b91c1c] cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               ))}
-
-              <button
-                type="button"
-                onClick={handleAddIngredient}
-                className="inline-flex items-center gap-1 text-xs text-amber-700 hover:text-amber-800 font-bold mt-1"
-              >
-                <Plus className="w-3.5 h-3.5" /> Añadir Ingrediente
-              </button>
-            </div>
-
-            {/* Recipe Steps */}
-            <div className="pt-3 border-t border-stone-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-stone-700">Pasos de Elaboración / Mise en place:</span>
-                <button
-                  type="button"
-                  onClick={handleAddRecipeStep}
-                  className="inline-flex items-center gap-1 text-xs text-amber-700 hover:text-amber-800 font-bold"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Añadir Paso de Receta
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                {recipeSteps.map((rStep, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-stone-400 w-6">#{idx + 1}</span>
-                    <input
-                      type="text"
-                      value={rStep}
-                      onChange={(e) => handleUpdateRecipeStep(idx, e.target.value)}
-                      placeholder={`Paso ${idx + 1} de elaboración...`}
-                      className="flex-1 px-3 py-1.5 text-xs border border-stone-300 rounded-lg bg-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveRecipeStep(idx)}
-                      className="text-stone-400 hover:text-red-600 p-1"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
 
-          {/* Section 6: Allergens selector */}
-          <div className="space-y-2">
-            <span className="block text-xs font-bold text-stone-700 uppercase">
-              Alérgenos Presentes (Toca para activar/desactivar)
+          {/* Elaboración */}
+          <div className="pt-5 border-t border-black/8 dark:border-white/8 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-[#1a1a18] dark:text-[#f0efe8]">
+                Elaboración
+              </span>
+              <button
+                type="button"
+                onClick={handleAddRecipeStep}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#2a8549] dark:text-[#4cc376] cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" /> Añadir paso
+              </button>
+            </div>
+            {recipeSteps.map((rStep, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <span className="font-mono-code text-xs text-[#6c6c66] dark:text-[#9a9991] w-5 tabular-nums">
+                  {idx + 1}.
+                </span>
+                <input
+                  type="text"
+                  value={rStep}
+                  onChange={(e) => handleUpdateRecipeStep(idx, e.target.value)}
+                  placeholder={`Paso ${idx + 1}...`}
+                  className={inputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveRecipeStep(idx)}
+                  aria-label="Eliminar paso"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#7a7a74] hover:text-[#b91c1c] cursor-pointer"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Alérgenos */}
+          <div className="pt-5 border-t border-black/8 dark:border-white/8 space-y-2.5">
+            <span className="block text-sm font-semibold text-[#1a1a18] dark:text-[#f0efe8]">
+              Alérgenos
             </span>
-            <div className="flex flex-wrap gap-1.5 p-3 bg-stone-50 rounded-xl border border-stone-200">
+            <div className="flex flex-wrap gap-1.5">
               {COMMON_ALLERGENS.map((allergen) => {
                 const isSelected = selectedAllergens.includes(allergen);
                 return (
@@ -534,36 +554,36 @@ export default function DishFormModal({ initialDish, onSave, onClose }: DishForm
                     key={allergen}
                     type="button"
                     onClick={() => toggleAllergen(allergen)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                    className={`min-h-[36px] px-3 py-1 text-xs font-medium rounded-xl border transition-colors cursor-pointer ${
                       isSelected
-                        ? 'bg-amber-800 text-white border-amber-900 shadow-xs'
-                        : 'bg-white text-stone-600 border-stone-300 hover:bg-stone-100'
+                        ? 'bg-[#1a1a18] dark:bg-[#f0efe8] text-white dark:text-[#1a1a18] border-transparent'
+                        : 'bg-[#f5f4f0] dark:bg-[#141413] text-[#6c6c66] dark:text-[#9a9991] border-black/10 dark:border-white/10 hover:text-[#1a1a18] dark:hover:text-[#f0efe8]'
                     }`}
                   >
-                    {isSelected ? `✓ ${allergen}` : `+ ${allergen}`}
+                    {allergen}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Modal Footer actions inside form */}
-          <div className="pt-4 border-t border-stone-200 flex items-center justify-end gap-3 sticky bottom-0 bg-white py-2">
+          {/* Sticky Footer */}
+          <div className="pt-4 border-t border-black/8 dark:border-white/8 flex items-center justify-end gap-2 sticky bottom-0 bg-white dark:bg-[#242422] py-2">
             <button
               id="btn-cancel-form"
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold rounded-lg text-stone-600 hover:bg-stone-100 transition-colors"
+              className="min-h-[44px] px-4 py-2 text-sm font-medium rounded-xl text-[#6c6c66] dark:text-[#9a9991] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               id="btn-save-dish"
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-bold rounded-lg bg-stone-900 text-white hover:bg-stone-800 shadow-sm transition-colors"
+              className="inline-flex min-h-[44px] items-center gap-2 px-5 py-2 text-sm font-medium rounded-xl bg-[#1a1a18] dark:bg-[#f0efe8] text-white dark:text-[#1a1a18] hover:opacity-90 transition-opacity cursor-pointer"
             >
-              <Save className="w-4 h-4" />
-              <span>Guardar Ficha de Plato</span>
+              <Save className="h-4 w-4" />
+              <span>Guardar</span>
             </button>
           </div>
         </form>

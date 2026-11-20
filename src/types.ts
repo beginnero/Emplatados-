@@ -7,7 +7,8 @@ export type DishCategory =
   | 'usuzukiri'
   | 'surtidos'
   | 'okonomiyaki'
-  | 'principales'
+  | 'curry'
+  | 'donburi'
   | 'postres';
 
 export type KitchenStation = 
