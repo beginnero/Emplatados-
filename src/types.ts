@@ -9,6 +9,8 @@ export type DishCategory =
   | 'okonomiyaki'
   | 'curry'
   | 'donburi'
+  | 'yakisoba'
+  | 'yakiniku'
   | 'postres';
 
 export type KitchenStation = 

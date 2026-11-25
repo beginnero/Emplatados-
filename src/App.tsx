@@ -8,7 +8,7 @@ import DishDetailModal from './components/DishDetailModal';
 import DishFormModal from './components/DishFormModal';
 import KitchenTimer from './components/KitchenTimer';
 
-const STORAGE_KEY = 'restaurant_kitchen_menu_v75';
+const STORAGE_KEY = 'restaurant_kitchen_menu_v84';
 const THEME_KEY = 'kitchen_manual_theme';
 
 export default function App() {
@@ -46,9 +46,9 @@ export default function App() {
     const initialIds = new Set(INITIAL_DISHES.map((d) => d.id));
 
     try {
-      const prevV74 = localStorage.getItem('restaurant_kitchen_menu_v74');
-      if (prevV74 && !localStorage.getItem(STORAGE_KEY)) {
-        const parsedPrev = JSON.parse(prevV74);
+      const prevV83 = localStorage.getItem('restaurant_kitchen_menu_v83');
+      if (prevV83 && !localStorage.getItem(STORAGE_KEY)) {
+        const parsedPrev = JSON.parse(prevV83);
         if (Array.isArray(parsedPrev)) {
           customFromPrev = parsedPrev.filter((d: Dish) => !initialIds.has(d.id));
         }
@@ -73,6 +73,15 @@ export default function App() {
       localStorage.removeItem('restaurant_kitchen_menu_v72');
       localStorage.removeItem('restaurant_kitchen_menu_v73');
       localStorage.removeItem('restaurant_kitchen_menu_v74');
+      localStorage.removeItem('restaurant_kitchen_menu_v75');
+      localStorage.removeItem('restaurant_kitchen_menu_v76');
+      localStorage.removeItem('restaurant_kitchen_menu_v77');
+      localStorage.removeItem('restaurant_kitchen_menu_v78');
+      localStorage.removeItem('restaurant_kitchen_menu_v79');
+      localStorage.removeItem('restaurant_kitchen_menu_v80');
+      localStorage.removeItem('restaurant_kitchen_menu_v81');
+      localStorage.removeItem('restaurant_kitchen_menu_v82');
+      localStorage.removeItem('restaurant_kitchen_menu_v83');
     } catch {
       // Ignore
     }
@@ -96,6 +105,10 @@ export default function App() {
               cat = 'curry';
             } else if ((cat as string) === 'principales' || d.id.includes('donburi') || d.name.toLowerCase().includes('-don')) {
               cat = 'donburi';
+            } else if (d.id.includes('yakisoba') || d.name.toLowerCase().includes('yakisoba')) {
+              cat = 'yakisoba';
+            } else if (d.id.includes('yakiniku') || d.name.toLowerCase().includes('yakiniku')) {
+              cat = 'yakiniku';
             } else if (!cat || (cat as string) === 'sushi') {
               if (d.id.includes('hosomaki') || d.name.toLowerCase().includes('hosomaki')) {
                 cat = 'hosomaki';
